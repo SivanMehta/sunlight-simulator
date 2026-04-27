@@ -7,7 +7,7 @@ uniform vec2 u_sMin, u_sMax, u_yMin, u_yMax;
 uniform vec3 u_sun;
 uniform float u_alt, u_px;
 
-const int N = 8;
+const int N = 9;
 uniform vec3 u_bMin[N], u_bMax[N];
 
 bool inBox2D(vec2 p, vec3 mn, vec3 mx) {

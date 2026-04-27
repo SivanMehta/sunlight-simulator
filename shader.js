@@ -21,6 +21,7 @@ const BOXES = [
   [ -7.5,  13.5, 0,   7.5, 14.0,  6],   // 5: fence north
   [ -8.0, -13.5, 0,  -7.5, 13.5,  6],   // 6: fence west
   [  7.5, -13.5, 0,   8.0, 13.5,  6],   // 7: fence east
+  [ -3.0, -8.5,  0,   3.0, -6.5,  3],   // 8: table 6'×2' h=3'
 ];
 const N_BOXES = BOXES.length;
 
