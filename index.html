@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yard Sunlight Simulator</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<h1>&#9728;&#65039; Yard Sunlight Simulator</h1>
+
+<div id="controls">
+  <label>Date: <input type="date" id="dateInput"></label>
+  <label>Time:
+    <input type="range" id="timeSlider" min="300" max="1260" value="720" step="5">
+  </label>
+  <span id="timeDisplay">12:00 PM</span>
+
+</div>
+
+<div id="info">
+  <span>Altitude: <strong id="altVal">--</strong>&deg;</span>
+  <span>Azimuth: <strong id="azVal">--</strong>&deg;</span>
+  <span id="sunNote"></span>
+</div>
+
+<div id="canvasWrap">
+  <canvas id="c"></canvas>
+  <span class="dir n">N</span>
+  <span class="dir s">S</span>
+  <span class="dir e">E</span>
+  <span class="dir w">W</span>
+</div>
+
+<div id="legend">
+  <span><span class="swatch" style="background:#6bae48"></span>Yard (sun)</span>
+  <span><span class="swatch" style="background:#1a2a10"></span>Yard (shadow)</span>
+  <span><span class="swatch" style="background:#62626c"></span>Houses</span>
+  <span><span class="swatch" style="background:#7a6040"></span>Fence</span>
+  <span><span class="swatch" style="background:#b8b5ab"></span>Ground</span>
+</div>
+
+<script src="shader.js"></script>
+</body>
+</html>
