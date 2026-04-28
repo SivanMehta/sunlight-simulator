@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Yard Sunlight Analysis — 2026</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1a2e; color: #e0e0e0;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px; min-height: 100vh;
+  }
+  h1 { margin-bottom: 8px; font-size: 1.4rem; color: #f0c040; }
+  p  { margin-bottom: 16px; font-size: 0.9rem; color: #aaa; }
+  canvas { max-width: 1000px; width: 100%; }
+</style>
+</head>
+<body>
+<h1>☀️ Yard Sunlight at Noon — 2026</h1>
+<p>Percentage of yard directly illuminated at 12:00 PM each day</p>
+<canvas id="chart"></canvas>
+
+<script type="module">
+async function init() {
+  const res = await fetch('sunlight-2026.csv');
+  const text = await res.text();
+  const lines = text.trim().split('\n').slice(1); // skip header
+
+  const labels = [];
+  const data = [];
+  for (const line of lines) {
+    const [date, pct] = line.split(',');
+    labels.push(date);
+    data.push(parseFloat(pct));
+  }
+
+  const ctx = document.getElementById('chart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        label: '% Yard Sunlit at Noon',
+        data,
+        borderColor: '#f0c040',
+        backgroundColor: 'rgba(240, 192, 64, 0.15)',
+        fill: true,
+        pointRadius: 0,
+        tension: 0.3,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { labels: { color: '#e0e0e0' } },
+        tooltip: {
+          callbacks: {
+            title: (items) => items[0].label,
+            label: (item) => `${item.parsed.y.toFixed(1)}% sunlit`,
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: {
+            color: '#999',
+            maxTicksLimit: 12,
+            callback: function(val, idx) {
+              const d = this.getLabelForValue(val);
+              // Show month labels only
+              const parts = d.split('-');
+              if (parts[2] === '01') {
+                const months = ['','Jan','Feb','Mar','Apr','May','Jun',
+                                'Jul','Aug','Sep','Oct','Nov','Dec'];
+                return months[parseInt(parts[1])];
+              }
+              return '';
+            }
+          },
+          grid: { color: 'rgba(255,255,255,0.05)' },
+        },
+        y: {
+          min: 0, max: 100,
+          ticks: { color: '#999', callback: v => v + '%' },
+          grid: { color: 'rgba(255,255,255,0.08)' },
+          title: { display: true, text: 'Yard Sunlit (%)', color: '#aaa' },
+        }
+      }
+    }
+  });
+}
+init();
+</script>
+</body>
+</html>
