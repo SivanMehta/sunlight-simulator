@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Summer Yard Sunlight Heatmap</title>
+<title>Yard Sunlight Heatmap</title>
 <style>
   * { box-sizing: border-box; }
   body {
@@ -78,11 +78,11 @@
 </style>
 </head>
 <body>
-  <h1>☀️ Summer Yard Direct-Sun Heatmap</h1>
+  <h1>☀️ Yard Direct-Sun Heatmap</h1>
   <p>
     Each cell shows how many hours of direct sunlight that part of the yard receives on an
-    average summer day between Memorial Day and Labor Day. Data comes from quarter-hour samples
-    using the same solar math and shadow tests as the simulator.
+    average day across the year. Data comes from quarter-hour samples using the same solar math
+    and shadow tests as the simulator.
   </p>
   <div class="wrap">
     <canvas id="heatmap" width="420" height="756"></canvas>
@@ -109,7 +109,7 @@
     const stats = document.getElementById('stats');
     const legendMax = document.getElementById('legendMax');
     const legendMid = document.getElementById('legendMid');
-    const DATASET_PATH = 'summer-sun-hours-heatmap-2026.csv';
+    const DATASET_PATH = 'sun-hours-heatmap-2026.csv';
 
     let state = null;
 
@@ -163,7 +163,7 @@
         <strong>Summary</strong><br>
         Window: ${startDate} to ${endDate}<br>
         Grid: ${gridX} × ${gridY}<br>
-        Max summer-day sun: ${maxHours.toFixed(2)} h<br>
+        Max average daily sun: ${maxHours.toFixed(2)} h<br>
         Yard-wide average: ${avgHours.toFixed(2)} h/day<br>
         North is at the top of the heatmap.
       `;
@@ -185,7 +185,7 @@
           yIndex,
           xFt,
           yFt,
-          summerSunHours,
+          annualSunHours,
           avgDailySunHours,
         ] = line.split(',');
         return {
@@ -199,7 +199,7 @@
           yIndex: Number(yIndex),
           xFt: Number(xFt),
           yFt: Number(yFt),
-          summerSunHours: Number(summerSunHours),
+          annualSunHours: Number(annualSunHours),
           avgDailySunHours: Number(avgDailySunHours),
         };
       });
@@ -239,8 +239,8 @@
       tooltip.style.top = `${event.clientY + 14}px`;
       tooltip.innerHTML = `
         x=${row.xFt.toFixed(2)} ft, y=${row.yFt.toFixed(2)} ft<br>
-        Avg summer-day sun: ${row.avgDailySunHours.toFixed(2)} h<br>
-        Summer total: ${row.summerSunHours.toFixed(1)} h
+        Avg daily sun: ${row.avgDailySunHours.toFixed(2)} h<br>
+        Annual total: ${row.annualSunHours.toFixed(1)} h
       `;
     });
 

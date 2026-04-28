@@ -97,17 +97,17 @@ Open `analysis/chart.html` (served over HTTP) to see an interactive Chart.js lin
 - **Summer (May–Jun):** ~40% peak — highest sun altitude (~62° at solstice)
 - **Fall (Sep–Oct):** drops back to 0% as shadows lengthen
 
-## Summer Yard Sunlight Heatmap
+## Yard Sunlight Heatmap
 
-The heatmap analysis answers a different question: **which parts of the yard get the most direct sun during summer, averaged across a typical day from Memorial Day through Labor Day?**
+The heatmap analysis answers a different question: **which parts of the yard get the most direct sun over the course of a typical day, averaged across the whole year?**
 
 ```bash
-node analysis/sun-hours-heatmap.mjs 2026    # generates analysis/summer-sun-hours-heatmap-2026.csv
+node analysis/sun-hours-heatmap.mjs 2026    # generates analysis/sun-hours-heatmap-2026.csv
 ```
 
-This script samples the full day in **15-minute increments** for each day in the summer window. For each sample point in a **30 × 54** grid across the yard, it accumulates direct-sun exposure and writes:
+This script samples the full day in **15-minute increments** for every day of the year. For each sample point in a **60 × 108** grid across the yard, it accumulates direct-sun exposure and writes:
 
-- **`summer_sun_hours`** — total direct-sun hours across the Memorial Day -> Labor Day period
-- **`avg_summer_day_sun_hours`** — summer total divided by the number of sampled days, which is what the heatmap colors represent
+- **`annual_sun_hours`** — total direct-sun hours across the whole year
+- **`avg_daily_sun_hours`** — yearly total divided by 365, which is what the heatmap colors represent
 
-Open `analysis/sun-hours-heatmap.html` (served over HTTP) to view the heatmap. Brighter cells get more direct sunlight on a typical summer day; darker cells are more persistently shadowed by the surrounding houses, fence, table, and seats.
+Open `analysis/sun-hours-heatmap.html` (served over HTTP) to view the heatmap. Brighter cells get more direct sunlight on a typical day; darker cells are more persistently shadowed by the surrounding houses, fence, table, and seats.

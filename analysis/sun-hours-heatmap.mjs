@@ -1,7 +1,6 @@
 #!/usr/bin/env node
-// Compute direct-sun exposure across the yard over Seattle summer:
-// Memorial Day through Labor Day, inclusive.
-// Outputs one CSV row per sample point with period total and average-daily sun hours.
+// Compute direct-sun exposure across the yard over an entire year.
+// Outputs one CSV row per sample point with annual and average-daily sun hours.
 
 import { writeFileSync } from 'fs';
 import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow } from '../shared.js';
@@ -12,20 +11,6 @@ const GRID_Y = 108;                // 0.25 ft samples across 27 ft yard length
 const SAMPLE_STEP_MIN = 15;       // quarter-hour sampling
 const SAMPLE_HOURS = SAMPLE_STEP_MIN / 60;
 const RAY_START_Z = 0.01;
-
-function memorialDay(year) {
-  const may31 = new Date(year, 4, 31);
-  const day = may31.getDay();
-  const offset = day === 1 ? 0 : (day + 6) % 7;
-  return new Date(year, 4, 31 - offset);
-}
-
-function laborDay(year) {
-  const sep1 = new Date(year, 8, 1);
-  const day = sep1.getDay();
-  const offset = day === 1 ? 0 : (8 - day) % 7;
-  return new Date(year, 8, 1 + offset);
-}
 
 function formatDate(date) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
@@ -44,8 +29,8 @@ for (let yi = 0; yi < GRID_Y; yi++) {
   }
 }
 
-const start = memorialDay(YEAR);
-const end = laborDay(YEAR);
+const start = new Date(YEAR, 0, 1);
+const end = new Date(YEAR, 11, 31);
 const startDate = formatDate(start);
 const endDate = formatDate(end);
 let dayCount = 0;
@@ -70,13 +55,13 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     }
   }
 
-  if (dy === 1 || (mo === 5 && dy === start.getDate()) || (mo === 9 && dy === end.getDate())) {
+  if (dy === 1) {
     process.stderr.write(`${formatDate(d)} `);
   }
 }
 
 const rows = [
-  'year,start_date,end_date,grid_x,grid_y,sample_step_minutes,x_index,y_index,x_ft,y_ft,summer_sun_hours,avg_summer_day_sun_hours',
+  'year,start_date,end_date,grid_x,grid_y,sample_step_minutes,x_index,y_index,x_ft,y_ft,annual_sun_hours,avg_daily_sun_hours',
 ];
 
 for (const point of points) {
@@ -96,6 +81,6 @@ for (const point of points) {
   ].join(','));
 }
 
-const outPath = new URL(`./summer-sun-hours-heatmap-${YEAR}.csv`, import.meta.url).pathname;
+const outPath = new URL(`./sun-hours-heatmap-${YEAR}.csv`, import.meta.url).pathname;
 writeFileSync(outPath, rows.join('\n') + '\n');
 process.stderr.write(`\nWrote ${pointCount} yard samples to ${outPath}\n`);

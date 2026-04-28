@@ -36,6 +36,12 @@ async function init() {
     labels.push(date);
     data.push(parseFloat(pct));
   }
+  const monthTickIndices = labels
+    .map((date, index) => ({ date, index }))
+    .filter(({ date }) => date.endsWith('-01'))
+    .map(({ index }) => index);
+  const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+                      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
   const ctx = document.getElementById('chart').getContext('2d');
   new Chart(ctx, {
@@ -60,19 +66,15 @@ async function init() {
       },
       scales: {
         x: {
+          afterBuildTicks: (axis) => {
+            axis.ticks = monthTickIndices.map((value) => ({ value }));
+          },
           ticks: {
             color: '#999',
-            maxTicksLimit: 12,
-            callback: function(val, idx) {
-              const d = this.getLabelForValue(val);
-              // Show month labels only
-              const parts = d.split('-');
-              if (parts[2] === '01') {
-                const months = ['','Jan','Feb','Mar','Apr','May','Jun',
-                                'Jul','Aug','Sep','Oct','Nov','Dec'];
-                return months[parseInt(parts[1])];
-              }
-              return '';
+            autoSkip: false,
+            callback: function(val) {
+              const d = labels[val];
+              return monthNames[parseInt(d.split('-')[1], 10) - 1];
             }
           },
           grid: { color: 'rgba(255,255,255,0.05)' },
