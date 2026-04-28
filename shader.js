@@ -14,8 +14,9 @@ const Y_MAX = [ 7.5,  13.5];
 // Buildings: [minX, minY, minZ, maxX, maxY, maxZ]  (feet)
 const HOUSE_HEIGHT = 25;                // all surrounding houses are 25 ft tall
 const FENCE_HEIGHT = 6;                 // yard perimeter fence height (ft)
-const FENCE_THICK  = 0.5;              // fence thickness (ft)
-const TABLE_HEIGHT = 3;                 // outdoor table height (ft)
+const FENCE_THICK  = 0.1;              // fence thickness (ft)
+const TABLE_HEIGHT = 4;                 // outdoor table height (ft)
+const SEAT_HEIGHT = 2;                  // bench seat height (ft)
 const BOXES = [
   [-44.5, -15.5, 0,  -7.5, 15.5, HOUSE_HEIGHT],   // 0: west house  37'×31'
   [  7.5, -15.5, 0,  45.5, 15.5, HOUSE_HEIGHT],   // 1: east house  38'×31'
@@ -25,7 +26,9 @@ const BOXES = [
   [ -7.5,  13.5, 0,   7.5, 14.0, FENCE_HEIGHT],   // 5: fence north
   [ -8.0, -13.5, 0,  -7.5, 13.5, FENCE_HEIGHT],   // 6: fence west
   [  7.5, -13.5, 0,   8.0, 13.5, FENCE_HEIGHT],   // 7: fence east
-  [ -3.0, -10.5, 0,   3.0, -8.5, TABLE_HEIGHT],   // 8: table 6'×2'
+  [ -3.0,  -9.0, 0,   3.0, -7.0, TABLE_HEIGHT],   // 8: table 6'×2'
+  [ -3.5, -10.0, 0,   3.5, -9.0, SEAT_HEIGHT],    // 9: seat south 7'×1'
+  [ -3.5,  -7.0, 0,   3.5, -6.0, SEAT_HEIGHT],    // 10: seat north 7'×1'
 ];
 const N_BOXES = BOXES.length;
 
@@ -130,6 +133,13 @@ async function loadShader(url) {
   return res.text();
 }
 
+function injectShaderConstants(src, constants) {
+  const defines = Object.entries(constants)
+    .map(([name, value]) => `#define ${name} ${value}`)
+    .join('\n');
+  return src.replace(/^#version 300 es\s*\n/, match => `${match}${defines}\n`);
+}
+
 function compileShader(gl, type, src) {
   const s = gl.createShader(type);
   gl.shaderSource(s, src);
@@ -161,9 +171,10 @@ async function main() {
     loadShader('vertex.glsl'),
     loadShader('fragment.glsl'),
   ]);
+  const fsConfigured = injectShaderConstants(fsSrc, { N_BOXES });
 
   const vs = compileShader(gl, gl.VERTEX_SHADER, vsSrc);
-  const fs = compileShader(gl, gl.FRAGMENT_SHADER, fsSrc);
+  const fs = compileShader(gl, gl.FRAGMENT_SHADER, fsConfigured);
   const prog = gl.createProgram();
   gl.attachShader(prog, vs);
   gl.attachShader(prog, fs);

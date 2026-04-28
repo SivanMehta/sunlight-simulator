@@ -7,15 +7,9 @@ uniform vec2 u_sMin, u_sMax, u_yMin, u_yMax;
 uniform vec3 u_sun;
 uniform float u_alt, u_px;
 
-const int N = 9;                        // total scene boxes (4 houses + 4 fences + 1 table)
+const int N = N_BOXES;                  // total scene boxes (4 houses + 4 fences + 1 table + 2 seats)
 uniform vec3 u_bMin[N], u_bMax[N];
 
-// ── Ray march parameters ─────────────────────────────────────
-const int   FINE_STEPS    = 120;        // iterations for thin-object detection
-const float FINE_STEP_FT  = 0.25;       // step size in feet (catches 0.5ft fence)
-const int   COARSE_STEPS  = 80;         // iterations for distant buildings
-const float COARSE_STEP_FT = 1.0;       // step size in feet
-const float MAX_HEIGHT_FT  = 25.0;      // tallest building height; early-exit threshold
 const float RAY_START_Z    = 0.01;      // ground clearance to avoid self-intersection
 
 // ── Visual tuning ────────────────────────────────────────────
@@ -43,28 +37,23 @@ bool inBox2D(vec2 p, vec3 mn, vec3 mx) {
   return p.x >= mn.x && p.x <= mx.x && p.y >= mn.y && p.y <= mx.y;
 }
 
-// Ray march from ground point toward sun, checking building intersections
-bool rayMarch(vec3 o, vec3 d) {
-  float t = 0.0;
-  // Fine steps to catch thin fence (0.5 ft thick)
-  for (int i = 0; i < FINE_STEPS; i++) {
-    t += FINE_STEP_FT;
-    vec3 p = o + t * d;
-    if (p.z > MAX_HEIGHT_FT) return false;
-    for (int j = 0; j < N; j++) {
-      if (all(greaterThanEqual(p, u_bMin[j])) && all(lessThanEqual(p, u_bMax[j])))
-        return true;
-    }
-  }
-  // Coarse steps for distant buildings
-  for (int i = 0; i < COARSE_STEPS; i++) {
-    t += COARSE_STEP_FT;
-    vec3 p = o + t * d;
-    if (p.z > MAX_HEIGHT_FT) return false;
-    for (int j = 0; j < N; j++) {
-      if (all(greaterThanEqual(p, u_bMin[j])) && all(lessThanEqual(p, u_bMax[j])))
-        return true;
-    }
+// Analytical ray-AABB intersection (slab method)
+// Returns true if ray from origin o in direction d hits the box [mn, mx] at t > 0
+bool rayHitsBox(vec3 o, vec3 d, vec3 mn, vec3 mx) {
+  vec3 invD = 1.0 / d;
+  vec3 t1 = (mn - o) * invD;
+  vec3 t2 = (mx - o) * invD;
+  vec3 tMin = min(t1, t2);
+  vec3 tMax = max(t1, t2);
+  float tEnter = max(max(tMin.x, tMin.y), tMin.z);
+  float tExit  = min(min(tMax.x, tMax.y), tMax.z);
+  return tExit >= tEnter && tExit > 0.0;
+}
+
+// Test if a point is in shadow by checking all boxes analytically
+bool inShadow(vec3 o, vec3 d) {
+  for (int i = 0; i < N; i++) {
+    if (rayHitsBox(o, d, u_bMin[i], u_bMax[i])) return true;
   }
   return false;
 }
@@ -173,11 +162,14 @@ void main() {
     c = GROUND_COLOR;
   }
 
-  // Shadow via ray marching
-  if (!isB) {
+  // Shadow via ray marching (ground, yard, and wood objects like fences/table)
+  bool isWood = isB && bi >= FIRST_WOOD_IDX;
+  if (!isB || isWood) {
     if (u_alt > 0.0) {
+      // Start ray above the object surface to avoid self-intersection
+      float startZ = isWood ? u_bMax[bi].z + RAY_START_Z : RAY_START_Z;
       float bounce = wallBounce(w, u_sun);
-      if (rayMarch(vec3(w, RAY_START_Z), u_sun)) {
+      if (inShadow(vec3(w, startZ), u_sun)) {
         c *= SHADOW_DIM;
         c += SHADOW_TINT;
       }
