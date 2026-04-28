@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Summer Yard Sunlight Heatmap</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    background: #1a1a2e;
+    color: #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+    min-height: 100vh;
+    gap: 16px;
+  }
+  h1 { margin: 0; font-size: 1.4rem; color: #f0c040; }
+  p { margin: 0; color: #aaa; text-align: center; max-width: 900px; }
+  .wrap {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  canvas {
+    border: 1px solid #333;
+    border-radius: 6px;
+    background: #111522;
+    image-rendering: pixelated;
+  }
+  .legend {
+    min-width: 220px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .scale {
+    width: 28px;
+    height: 240px;
+    border-radius: 4px;
+    border: 1px solid #333;
+    background: linear-gradient(to top, #1a2744, #25507f, #28a6a4, #8bcf64, #f0c040);
+  }
+  .legend-row {
+    display: flex;
+    gap: 12px;
+    align-items: stretch;
+  }
+  .ticks {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #aaa;
+    font-size: 0.85rem;
+  }
+  .stats {
+    font-size: 0.9rem;
+    color: #c8c8c8;
+    line-height: 1.5;
+  }
+  #tooltip {
+    position: fixed;
+    display: none;
+    pointer-events: none;
+    background: rgba(10, 10, 18, 0.95);
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 0.85rem;
+    color: #f4f4f4;
+    white-space: nowrap;
+  }
+</style>
+</head>
+<body>
+  <h1>☀️ Summer Yard Direct-Sun Heatmap</h1>
+  <p>
+    Each cell shows how many hours of direct sunlight that part of the yard receives on an
+    average summer day between Memorial Day and Labor Day. Data comes from quarter-hour samples
+    using the same solar math and shadow tests as the simulator.
+  </p>
+  <div class="wrap">
+    <canvas id="heatmap" width="420" height="756"></canvas>
+
+    <div class="legend">
+      <div class="legend-row">
+        <div class="scale"></div>
+        <div class="ticks">
+          <span id="legendMax">-- h</span>
+          <span id="legendMid">-- h</span>
+          <span>0 h</span>
+        </div>
+      </div>
+      <div class="stats" id="stats"></div>
+    </div>
+  </div>
+
+  <div id="tooltip"></div>
+
+  <script type="module">
+    const canvas = document.getElementById('heatmap');
+    const ctx = canvas.getContext('2d');
+    const tooltip = document.getElementById('tooltip');
+    const stats = document.getElementById('stats');
+    const legendMax = document.getElementById('legendMax');
+    const legendMid = document.getElementById('legendMid');
+    const DATASET_PATH = 'summer-sun-hours-heatmap-2026.csv';
+
+    let state = null;
+
+    function colorFor(value, maxValue) {
+      const t = maxValue <= 0 ? 0 : Math.max(0, Math.min(1, value / maxValue));
+      const stops = [
+        [0.00, [26, 39, 68]],
+        [0.33, [37, 80, 127]],
+        [0.66, [40, 166, 164]],
+        [0.85, [139, 207, 100]],
+        [1.00, [240, 192, 64]],
+      ];
+
+      let lower = stops[0];
+      let upper = stops[stops.length - 1];
+      for (let i = 1; i < stops.length; i++) {
+        if (t <= stops[i][0]) {
+          lower = stops[i - 1];
+          upper = stops[i];
+          break;
+        }
+      }
+
+      const localT = upper[0] === lower[0] ? 0 : (t - lower[0]) / (upper[0] - lower[0]);
+      const rgb = lower[1].map((channel, index) =>
+        Math.round(channel + (upper[1][index] - channel) * localT)
+      );
+      return `rgb(${rgb[0]}, ${rgb[1]}, ${rgb[2]})`;
+    }
+
+    function render() {
+      if (!state) return;
+      const { gridX, gridY, rows, maxHours, avgHours, startDate, endDate } = state;
+      const cellW = canvas.width / gridX;
+      const cellH = canvas.height / gridY;
+
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (const row of rows) {
+        const drawY = gridY - row.yIndex - 1;
+        ctx.fillStyle = colorFor(row.avgDailySunHours, maxHours);
+        ctx.fillRect(row.xIndex * cellW, drawY * cellH, cellW, cellH);
+      }
+
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.12)';
+      ctx.lineWidth = 1;
+      ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
+
+      legendMax.textContent = `${maxHours.toFixed(1)} h`;
+      legendMid.textContent = `${(maxHours / 2).toFixed(1)} h`;
+      stats.innerHTML = `
+        <strong>Summary</strong><br>
+        Window: ${startDate} to ${endDate}<br>
+        Grid: ${gridX} × ${gridY}<br>
+        Max summer-day sun: ${maxHours.toFixed(2)} h<br>
+        Yard-wide average: ${avgHours.toFixed(2)} h/day<br>
+        North is at the top of the heatmap.
+      `;
+    }
+
+    async function loadDataset(path) {
+      const res = await fetch(path);
+      const text = await res.text();
+      const lines = text.trim().split('\n');
+      const rows = lines.slice(1).map((line) => {
+        const [
+          year,
+          startDate,
+          endDate,
+          gridX,
+          gridY,
+          sampleStepMinutes,
+          xIndex,
+          yIndex,
+          xFt,
+          yFt,
+          summerSunHours,
+          avgDailySunHours,
+        ] = line.split(',');
+        return {
+          year: Number(year),
+          startDate,
+          endDate,
+          gridX: Number(gridX),
+          gridY: Number(gridY),
+          sampleStepMinutes: Number(sampleStepMinutes),
+          xIndex: Number(xIndex),
+          yIndex: Number(yIndex),
+          xFt: Number(xFt),
+          yFt: Number(yFt),
+          summerSunHours: Number(summerSunHours),
+          avgDailySunHours: Number(avgDailySunHours),
+        };
+      });
+
+      const first = rows[0];
+      const avgHours = rows.reduce((sum, row) => sum + row.avgDailySunHours, 0) / rows.length;
+      const maxHours = Math.max(...rows.map((row) => row.avgDailySunHours));
+
+      state = {
+        startDate: first.startDate,
+        endDate: first.endDate,
+        gridX: first.gridX,
+        gridY: first.gridY,
+        sampleStepMinutes: first.sampleStepMinutes,
+        rows,
+        avgHours,
+        maxHours,
+      };
+      render();
+    }
+
+    canvas.addEventListener('mousemove', (event) => {
+      if (!state) return;
+      const rect = canvas.getBoundingClientRect();
+      const x = event.clientX - rect.left;
+      const y = event.clientY - rect.top;
+      const cellW = rect.width / state.gridX;
+      const cellH = rect.height / state.gridY;
+      const xIndex = Math.max(0, Math.min(state.gridX - 1, Math.floor(x / cellW)));
+      const yIndexFromTop = Math.max(0, Math.min(state.gridY - 1, Math.floor(y / cellH)));
+      const yIndex = state.gridY - yIndexFromTop - 1;
+      const row = state.rows.find((entry) => entry.xIndex === xIndex && entry.yIndex === yIndex);
+      if (!row) return;
+
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${event.clientX + 14}px`;
+      tooltip.style.top = `${event.clientY + 14}px`;
+      tooltip.innerHTML = `
+        x=${row.xFt.toFixed(2)} ft, y=${row.yFt.toFixed(2)} ft<br>
+        Avg summer-day sun: ${row.avgDailySunHours.toFixed(2)} h<br>
+        Summer total: ${row.summerSunHours.toFixed(1)} h
+      `;
+    });
+
+    canvas.addEventListener('mouseleave', () => {
+      tooltip.style.display = 'none';
+    });
+
+    loadDataset(DATASET_PATH);
+  </script>
+</body>
+</html>

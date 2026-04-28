@@ -1,6 +1,6 @@
 # ☀️ Yard Sunlight Simulator
 
-A WebGL 2 simulation that visualizes shadows cast across a residential yard throughout the day. Renders accurate solar positions and real-time shadow mapping using ray marching in a fragment shader.
+A WebGL 2 simulation that visualizes shadows cast across a residential yard throughout the day. Renders accurate solar positions and real-time shadow mapping using analytical ray-box intersection in a fragment shader.
 
 ![screenshot](reference/screenshot.png)
 
@@ -38,6 +38,8 @@ fragment.glsl       Core rendering: shadow casting, bounce lighting, coloring
 analysis/
   analyze.mjs       Node.js script — yearly sunlight data → CSV
   chart.html        Chart.js visualization of the CSV data
+  sun-hours-heatmap.mjs  Node.js script — yard sunlight-hours heatmap → CSV
+  sun-hours-heatmap.html Heatmap viewer for yard-wide sun exposure
   sunlight-2026.csv Generated output
 ```
 
@@ -94,3 +96,18 @@ Open `analysis/chart.html` (served over HTTP) to see an interactive Chart.js lin
 - **Spring (Mar–Apr):** 10–30% — sun climbs above the rooflines
 - **Summer (May–Jun):** ~40% peak — highest sun altitude (~62° at solstice)
 - **Fall (Sep–Oct):** drops back to 0% as shadows lengthen
+
+## Summer Yard Sunlight Heatmap
+
+The heatmap analysis answers a different question: **which parts of the yard get the most direct sun during summer, averaged across a typical day from Memorial Day through Labor Day?**
+
+```bash
+node analysis/sun-hours-heatmap.mjs 2026    # generates analysis/summer-sun-hours-heatmap-2026.csv
+```
+
+This script samples the full day in **15-minute increments** for each day in the summer window. For each sample point in a **30 × 54** grid across the yard, it accumulates direct-sun exposure and writes:
+
+- **`summer_sun_hours`** — total direct-sun hours across the Memorial Day -> Labor Day period
+- **`avg_summer_day_sun_hours`** — summer total divided by the number of sampled days, which is what the heatmap colors represent
+
+Open `analysis/sun-hours-heatmap.html` (served over HTTP) to view the heatmap. Brighter cells get more direct sunlight on a typical summer day; darker cells are more persistently shadowed by the surrounding houses, fence, table, and seats.
