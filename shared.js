@@ -198,3 +198,34 @@ export function solarNoon(yr, mo, dy) {
   const m = Math.round(noonMin % 60);
   return { hour: h, minute: m };
 }
+
+// ── Clear-sky irradiance model (Meinel) ────────────────────
+// Returns photon flux density {direct, diffuse} in µmol/m²/s for PAR (400–700nm).
+// Assumes clear skies; diffuse is ~14% of direct horizontal component.
+// Reference: https://pvpmc.sandia.gov/modeling-guide/1-weather-design-inputs/irradiance-insolation/global-horizontal-irradiance/
+export function clearSkyPPFD(altRad) {
+  if (altRad <= 0) return { direct: 0, diffuse: 0 };
+  
+  // Air mass (Kasten-Czeplak)
+  const sinAlt = Math.sin(altRad);
+  const AM = 1.0 / (sinAlt + 0.50572 * Math.pow(96.07995 - altRad / DEG, -1.6364));
+  
+  // Clear-sky DNI using Meinel model: DNI = 1361 * 0.7^(AM^0.678)
+  // 1361 W/m² = solar constant at Earth's mean distance
+  const DNI = 1361 * Math.pow(0.7, Math.pow(AM, 0.678));
+  
+  // Direct horizontal irradiance
+  const dirHoriz = DNI * sinAlt;
+  
+  // Diffuse horizontal (clear-sky approximation)
+  const diffHoriz = 0.14 * dirHoriz;
+  
+  // Total PAR (photosynthetically active radiation) is ~45% of solar irradiance
+  const parTotal = (dirHoriz + diffHoriz) * 0.45;
+  
+  // Convert W/m² to µmol/m²/s: 1 W/m² PAR ≈ 4.57 µmol/m²/s
+  const ppfdDirect = dirHoriz * 0.45 * 4.57;
+  const ppfdDiffuse = diffHoriz * 0.45 * 4.57;
+  
+  return { direct: ppfdDirect, diffuse: ppfdDiffuse };
+}

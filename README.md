@@ -97,17 +97,38 @@ Open `analysis/chart.html` (served over HTTP) to see an interactive Chart.js lin
 - **Summer (May–Jun):** ~40% peak — highest sun altitude (~62° at solstice)
 - **Fall (Sep–Oct):** drops back to 0% as shadows lengthen
 
-## Yard Sunlight Heatmap
+## Yard Sunlight Heatmap (Daily Light Integral)
 
-The heatmap analysis answers: **which parts of the yard get the most direct sun during the growing season (April 1 – September 1) between 9am and 5pm?**
+The heatmap shows **Daily Light Integral (DLI, mol/m²/day)** — the cumulative photosynthetically active radiation received during the growing season (April 1 – September 1, 9am–5pm).
+
+**Why DLI matters:** Unlike raw sun-hours (which treat 7am and noon the same), DLI accounts for the fact that midday sun delivers far more energy. This makes DLI the industry standard metric for plant growth decisions in horticulture.
+
+### Generation
 
 ```bash
 node analysis/sun-hours-heatmap.mjs 2026    # generates analysis/sun-hours-heatmap-2026.csv
 ```
 
-This script samples the **9am–5pm window in 15-minute increments** for each day of the growing season. For each sample point in a **60 × 108** grid across the yard, it accumulates direct-sun exposure and writes:
+The script samples every 15 minutes during the growing season window. For each sample:
 
-- **`season_sun_hours`** — total direct-sun hours across April 1 – September 1 (9am–5pm)
-- **`avg_day_sun_hours`** — season total divided by the number of days in the window, which is what the heatmap colors represent
+1. **Clear-sky irradiance:** Compute Direct Normal Irradiance (DNI) using the Meinel model: `DNI = 1361 × 0.7^(AM^0.678)` W/m², where air mass (AM) depends on sun altitude
+2. **PAR split:** Break into direct + diffuse components; apply 45% PAR (photosynthetically active radiation, 400–700 nm) fraction
+3. **PPFD conversion:** Convert to photon flux density (µmol/m²/s) using standard factor 4.57
+4. **Shadow handling:**
+   - **Unshaded ground:** receives direct + diffuse PAR
+   - **Shaded ground:** receives diffuse-only PAR (realistic, since sky light still reaches it)
+5. **Accumulation:** Sum DLI across all samples: `DLI = Σ(PPFD × 900s) / 1,000,000 mol/m²`
 
-Open `analysis/sun-hours-heatmap.html` (served over HTTP) to view the heatmap. Brighter cells get more direct sunlight on a typical growing-season afternoon; darker cells are more persistently shadowed by the surrounding houses, fence, table, and seats.
+### Interpretation
+
+The heatmap colors represent average daily DLI during the season. Use these ranges to choose plants:
+
+| Plant Type | DLI Range | Examples |
+|-----------|-----------|----------|
+| **Full sun** | 20–40 mol/m²/day | Tomatoes, peppers, basil, lettuce (open), potatoes |
+| **Partial shade** | 10–20 mol/m²/day | Lettuce (filtered), herbs, ferns, hostas, shade vegetables |
+| **Full shade** | 5–10 mol/m²/day | Hostas, shade ferns, foliage plants |
+
+Even shadowed areas receive diffuse sky light and register nonzero DLI, making the heatmap valuable for both sunny and shade-plant planning.
+
+Open `analysis/sun-hours-heatmap.html` (served over HTTP) to view the interactive heatmap with hover tooltips.

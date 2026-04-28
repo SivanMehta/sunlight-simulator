@@ -1,15 +1,16 @@
 #!/usr/bin/env node
-// Compute direct-sun exposure across the yard during growing season (Apr 1 - Sep 1, 9am-5pm).
-// Outputs one CSV row per sample point with season total and average-daily sun hours.
+// Compute Daily Light Integral (DLI, mol/m²/day) across the yard during growing season (Apr 1 - Sep 1, 9am-5pm).
+// Uses clear-sky irradiance model (Meinel) to weight each sample by PAR intensity.
+// Outputs one CSV row per sample point with season total and average-daily DLI.
 
 import { writeFileSync } from 'fs';
-import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow } from '../shared.js';
+import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow, clearSkyPPFD } from '../shared.js';
 
 const YEAR = parseInt(process.argv[2] || '2026', 10);
 const GRID_X = 60;                // 0.25 ft samples across 15 ft yard width
 const GRID_Y = 108;                // 0.25 ft samples across 27 ft yard length
 const SAMPLE_STEP_MIN = 15;       // quarter-hour sampling
-const SAMPLE_HOURS = SAMPLE_STEP_MIN / 60;
+const SAMPLE_STEP_SEC = SAMPLE_STEP_MIN * 60;  // 900 seconds per sample
 const RAY_START_Z = 0.01;
 
 function formatDate(date) {
@@ -25,7 +26,7 @@ for (let yi = 0; yi < GRID_Y; yi++) {
   const y = Y_MIN[1] + (yi + 0.5) * yStep;
   for (let xi = 0; xi < GRID_X; xi++) {
     const x = Y_MIN[0] + (xi + 0.5) * xStep;
-    points.push({ xIndex: xi, yIndex: yi, x, y, sunHours: 0 });
+    points.push({ xIndex: xi, yIndex: yi, x, y, dliMol: 0 });
   }
 }
 
@@ -47,11 +48,15 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const { alt, az } = sunPos(yr, mo, dy, hour, minute);
     if (alt <= 0) continue;
 
+    const { direct, diffuse } = clearSkyPPFD(alt);
     const dir = sunDir(alt, az);
+    
     for (const point of points) {
-      if (!inShadow(point.x, point.y, RAY_START_Z, dir)) {
-        point.sunHours += SAMPLE_HOURS;
-      }
+      const shaded = inShadow(point.x, point.y, RAY_START_Z, dir);
+      // Unshaded: direct + diffuse. Shaded: diffuse only (sky light).
+      const ppfd = shaded ? diffuse : (direct + diffuse);
+      // Convert PPFD (µmol/m²/s) × time (s) → mol/m²
+      point.dliMol += (ppfd * SAMPLE_STEP_SEC) / 1_000_000;
     }
   }
 
@@ -61,7 +66,7 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
 }
 
 const rows = [
-  'year,start_date,end_date,grid_x,grid_y,sample_step_minutes,x_index,y_index,x_ft,y_ft,season_sun_hours,avg_day_sun_hours',
+  'year,start_date,end_date,grid_x,grid_y,sample_step_minutes,x_index,y_index,x_ft,y_ft,season_dli_mol,avg_daily_dli',
 ];
 
 for (const point of points) {
@@ -76,8 +81,8 @@ for (const point of points) {
     point.yIndex,
     point.x.toFixed(3),
     point.y.toFixed(3),
-    point.sunHours.toFixed(2),
-    (point.sunHours / dayCount).toFixed(3),
+    point.dliMol.toFixed(2),
+    (point.dliMol / dayCount).toFixed(3),
   ].join(','));
 }
 

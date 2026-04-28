@@ -78,11 +78,11 @@
 </style>
 </head>
 <body>
-  <h1>☀️ Yard Growing Season Sunlight Heatmap</h1>
+  <h1>☀️ Yard Growing Season DLI Heatmap</h1>
   <p>
-    Each cell shows how many hours of direct sunlight that part of the yard receives on an
-    average day during the growing season (April 1 – September 1, 9am–5pm). Data comes from quarter-hour 
-    samples using the same solar math and shadow tests as the simulator.
+    Each cell shows the Daily Light Integral (DLI, mol/m²/day) that part of the yard receives during the growing season
+    (April 1 – September 1, 9am–5pm). DLI measures cumulative photosynthetically active radiation and is the standard metric
+    for plant growth. Data comes from quarter-hour samples using a clear-sky irradiance model (Meinel) weighted by solar altitude.
   </p>
   <div class="wrap">
     <canvas id="heatmap" width="420" height="756"></canvas>
@@ -91,9 +91,9 @@
       <div class="legend-row">
         <div class="scale"></div>
         <div class="ticks">
-          <span id="legendMax">-- h</span>
-          <span id="legendMid">-- h</span>
-          <span>0 h</span>
+          <span id="legendMax">-- mol/m²</span>
+          <span id="legendMid">-- mol/m²</span>
+          <span>0 mol/m²</span>
         </div>
       </div>
       <div class="stats" id="stats"></div>
@@ -142,14 +142,14 @@
 
     function render() {
       if (!state) return;
-      const { gridX, gridY, rows, maxHours, avgHours, startDate, endDate } = state;
+      const { gridX, gridY, rows, maxDLI, avgDLI, startDate, endDate } = state;
       const cellW = canvas.width / gridX;
       const cellH = canvas.height / gridY;
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const row of rows) {
         const drawY = gridY - row.yIndex - 1;
-        ctx.fillStyle = colorFor(row.avgDailySunHours, maxHours);
+        ctx.fillStyle = colorFor(row.avgDailyDLI, maxDLI);
         ctx.fillRect(row.xIndex * cellW, drawY * cellH, cellW, cellH);
       }
 
@@ -157,14 +157,20 @@
       ctx.lineWidth = 1;
       ctx.strokeRect(0.5, 0.5, canvas.width - 1, canvas.height - 1);
 
-      legendMax.textContent = `${maxHours.toFixed(1)} h`;
-      legendMid.textContent = `${(maxHours / 2).toFixed(1)} h`;
+      legendMax.textContent = `${maxDLI.toFixed(1)} mol/m²`;
+      legendMid.textContent = `${(maxDLI / 2).toFixed(1)} mol/m²`;
       stats.innerHTML = `
         <strong>Summary</strong><br>
         Window: ${startDate} to ${endDate}<br>
         Grid: ${gridX} × ${gridY}<br>
-        Max average daily sun: ${maxHours.toFixed(2)} h<br>
-        Yard-wide average: ${avgHours.toFixed(2)} h/day<br>
+        Max avg daily DLI: ${maxDLI.toFixed(2)} mol/m²/day<br>
+        Yard-wide average: ${avgDLI.toFixed(2)} mol/m²/day<br>
+        <br>
+        <strong>Plant DLI Ranges:</strong><br>
+        Full sun: 20–40 mol/m²/day<br>
+        Partial shade: 10–20 mol/m²/day<br>
+        Full shade: 5–10 mol/m²/day<br>
+        <br>
         North is at the top of the heatmap.
       `;
     }
@@ -185,8 +191,8 @@
           yIndex,
           xFt,
           yFt,
-          annualSunHours,
-          avgDailySunHours,
+          seasonDLI,
+          avgDailyDLI,
         ] = line.split(',');
         return {
           year: Number(year),
@@ -199,14 +205,14 @@
           yIndex: Number(yIndex),
           xFt: Number(xFt),
           yFt: Number(yFt),
-          annualSunHours: Number(annualSunHours),
-          avgDailySunHours: Number(avgDailySunHours),
+          seasonDLI: Number(seasonDLI),
+          avgDailyDLI: Number(avgDailyDLI),
         };
       });
 
       const first = rows[0];
-      const avgHours = rows.reduce((sum, row) => sum + row.avgDailySunHours, 0) / rows.length;
-      const maxHours = Math.max(...rows.map((row) => row.avgDailySunHours));
+      const avgDLI = rows.reduce((sum, row) => sum + row.avgDailyDLI, 0) / rows.length;
+      const maxDLI = Math.max(...rows.map((row) => row.avgDailyDLI));
 
       state = {
         startDate: first.startDate,
@@ -215,8 +221,8 @@
         gridY: first.gridY,
         sampleStepMinutes: first.sampleStepMinutes,
         rows,
-        avgHours,
-        maxHours,
+        avgDLI,
+        maxDLI,
       };
       render();
     }
@@ -239,8 +245,8 @@
       tooltip.style.top = `${event.clientY + 14}px`;
       tooltip.innerHTML = `
         x=${row.xFt.toFixed(2)} ft, y=${row.yFt.toFixed(2)} ft<br>
-        Avg daily sun (9am–5pm): ${row.avgDailySunHours.toFixed(2)} h<br>
-        Season total: ${row.annualSunHours.toFixed(1)} h
+        Avg daily DLI: ${row.avgDailyDLI.toFixed(2)} mol/m²/day<br>
+        Season total: ${row.seasonDLI.toFixed(1)} mol/m²
       `;
     });
 
