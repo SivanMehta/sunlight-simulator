@@ -161,17 +161,9 @@
       legendMax.textContent = `${maxDLI.toFixed(1)} mol/m²`;
       legendMid.textContent = `${(maxDLI / 2).toFixed(1)} mol/m²`;
       stats.innerHTML = `
-        <strong>Summary</strong><br>
         Window: ${startDate} to ${endDate}<br>
-        Grid: ${gridX} × ${gridY}<br>
         Max avg daily DLI: ${maxDLI.toFixed(2)} mol/m²/day<br>
         Yard-wide average: ${avgDLI.toFixed(2)} mol/m²/day<br>
-        <br>
-        <strong>Plant DLI Ranges:</strong><br>
-        Full sun: 20–40 mol/m²/day<br>
-        Partial shade: 10–20 mol/m²/day<br>
-        Full shade: 5–10 mol/m²/day<br>
-        <br>
         North is at the top of the heatmap.
       `;
     }

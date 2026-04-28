@@ -56,8 +56,10 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     
     for (const point of points) {
       const shaded = inShadow(point.x, point.y, RAY_START_Z, dir);
-      // Unshaded: direct + diffuse. Shaded: diffuse only (sky light).
-      const ppfd = shaded ? diffuse : (direct + diffuse);
+      // Shadow effect only matters when sky is clear. Overcast (clearFraction=0) → no shadows.
+      // Unshaded points get direct+diffuse; shaded points get diffuse only; shadow contribution scaled by clearness.
+      const directContribution = shaded ? 0 : direct;
+      const ppfd = diffuse + directContribution * clearFraction;
       // Convert PPFD (µmol/m²/s) × time (s) → mol/m²
       point.dliMol += (ppfd * SAMPLE_STEP_SEC) / 1_000_000;
     }

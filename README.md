@@ -122,9 +122,10 @@ The script samples every 5 minutes during the growing season window. For each sa
    - **September:** 50% clear (fall clouds return)
    - Cloud transmission model: direct irradiance transmits only through clear fraction; diffuse penetrates clouds at 50% rate
 4. **PPFD conversion:** Convert to photon flux density (µmol/m²/s) using standard factor 4.57
-5. **Shadow handling:**
-   - **Unshaded ground:** receives direct + diffuse PAR
-   - **Shaded ground:** receives diffuse-only PAR (realistic, since sky light still reaches it)
+5. **Shadow handling with cloud modulation:**
+   - **Clear skies (high clearFraction):** Direct light is blocked by shadows; unshaded areas brighter, shaded areas dimmer
+   - **Overcast (low clearFraction):** Light scatters uniformly; shadows disappear, all ground points receive nearly equal light
+   - **Blended model:** `PPFD = diffuse + direct × clearFraction` — shadow effect proportional to sky clearness
 6. **Accumulation:** Sum DLI across all samples: `DLI = Σ(PPFD × 300s) / 1,000,000 mol/m²`
 
 ### Manual Regeneration
