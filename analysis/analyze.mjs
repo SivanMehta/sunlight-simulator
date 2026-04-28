@@ -1,13 +1,12 @@
 #!/usr/bin/env node
-// Compute the percentage of yard directly sunlit at 12:00 PM
+// Compute the percentage of yard directly sunlit at solar noon
 // for every day of a given year. Outputs CSV.
 
 import { writeFileSync } from 'fs';
-import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow } from '../shared.js';
+import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow, solarNoon } from '../shared.js';
 
 const YEAR = parseInt(process.argv[2] || '2026', 10);
 const GRID_RES = 60;                    // sample points per axis (60×60 = 3600 samples)
-const NOON_H = 12, NOON_M = 0;         // local time to evaluate
 const RAY_START_Z = 0.01;              // ground clearance for shadow rays
 
 // Pre-compute sample grid positions within the yard
@@ -25,7 +24,8 @@ for (let d = start; d < end; d.setDate(d.getDate() + 1)) {
   const mo = d.getMonth() + 1;
   const dy = d.getDate();
 
-  const { alt, az } = sunPos(yr, mo, dy, NOON_H, NOON_M);
+  const { hour, minute } = solarNoon(yr, mo, dy);
+  const { alt, az } = sunPos(yr, mo, dy, hour, minute);
 
   let litCount = 0;
   if (alt > 0) {

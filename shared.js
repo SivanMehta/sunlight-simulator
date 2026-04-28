@@ -161,3 +161,40 @@ export function inShadow(x, y, startZ, sunDirVec) {
   }
   return false;
 }
+
+// ── Solar noon ─────────────────────────────────────────────
+// Returns { hour, minute } of solar noon in local clock time.
+// Solar noon is when the hour angle = 0 (sun due south).
+export function solarNoon(yr, mo, dy) {
+  const off = utcOffset(yr, mo, dy);
+  // Approximate: compute equation of time at ~12:00 local
+  const utcH = 12 - off;
+  const JD = julianDay(yr, mo, dy, utcH);
+  const T = (JD - 2451545.0) / 36525.0;
+
+  let L0 = (280.46646 + T * (36000.76983 + 0.0003032 * T)) % 360;
+  if (L0 < 0) L0 += 360;
+  let M = (357.52911 + T * (35999.05029 - 0.0001537 * T)) % 360;
+  if (M < 0) M += 360;
+  const Mr = M * DEG;
+  const e = 0.016708634 - T * (0.000042037 + 0.0000001267 * T);
+  const omega = 125.04 - 1934.136 * T;
+  const eps0 = 23 + (26 + (21.448 - T * (46.815 + T * (0.00059 - T * 0.001813))) / 60) / 60;
+  const eps = (eps0 + 0.00256 * Math.cos(omega * DEG)) * DEG;
+  const y2 = Math.tan(eps / 2) ** 2;
+  const L0r = L0 * DEG;
+  const MIN_PER_DEG = 4;
+  const eqT = MIN_PER_DEG / DEG * (
+    y2 * Math.sin(2 * L0r)
+    - 2 * e * Math.sin(Mr)
+    + 4 * e * y2 * Math.sin(Mr) * Math.cos(2 * L0r)
+    - 0.5 * y2 * y2 * Math.sin(4 * L0r)
+    - 1.25 * e * e * Math.sin(2 * Mr)
+  );
+
+  // Solar noon in local minutes = 720 - 4*LON - eqT + offset*60
+  const noonMin = 720 - MIN_PER_DEG * LON - eqT + off * 60;
+  const h = Math.floor(noonMin / 60);
+  const m = Math.round(noonMin % 60);
+  return { hour: h, minute: m };
+}
