@@ -1,15 +1,15 @@
 # ☀️ Yard Sunlight Simulator
 
-A WebGL 2 simulation that visualizes shadows cast across a residential yard in Seattle, WA throughout the day. Renders accurate solar positions and real-time shadow mapping using ray marching in a fragment shader.
+A WebGL 2 simulation that visualizes shadows cast across a residential yard throughout the day. Renders accurate solar positions and real-time shadow mapping using ray marching in a fragment shader.
 
-![screenshot](reference/satelitte.png)
+![screenshot](reference/screenshot.png)
 
 ## Running
 
 The app loads GLSL shaders via `fetch()`, so it must be served over HTTP (not `file://`).
 
 ```bash
-npm start          # runs npx serve .
+npm start
 # or
 python3 -m http.server
 ```
