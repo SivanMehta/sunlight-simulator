@@ -4,7 +4,7 @@
 // Outputs one CSV row per sample point with season total and average-daily DLI.
 
 import { writeFileSync } from 'fs';
-import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow, clearSkyPPFD } from '../shared.js';
+import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow, seattleCloudCover, cloudyPPFD } from '../shared.js';
 
 const YEAR = parseInt(process.argv[2] || '2026', 10);
 const GRID_X = 60;                // 0.25 ft samples across 15 ft yard width
@@ -41,6 +41,9 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
   const yr = d.getFullYear();
   const mo = d.getMonth() + 1;
   const dy = d.getDate();
+  
+  // Get Seattle's typical cloud cover for this month
+  const clearFraction = seattleCloudCover(mo);
 
   for (let totalMin = 540; totalMin <= 1020; totalMin += SAMPLE_STEP_MIN) {  // 9am-5pm
     const hour = Math.floor(totalMin / 60);
@@ -48,7 +51,7 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
     const { alt, az } = sunPos(yr, mo, dy, hour, minute);
     if (alt <= 0) continue;
 
-    const { direct, diffuse } = clearSkyPPFD(alt);
+    const { direct, diffuse } = cloudyPPFD(alt, clearFraction);
     const dir = sunDir(alt, az);
     
     for (const point of points) {
@@ -61,7 +64,7 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
   }
 
   if (dy === 1) {
-    process.stderr.write(`${formatDate(d)} `);
+    process.stderr.write(`${formatDate(d)} (${(clearFraction * 100).toFixed(0)}% clear) `);
   }
 }
 

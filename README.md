@@ -113,11 +113,19 @@ The script samples every 5 minutes during the growing season window. For each sa
 
 1. **Clear-sky irradiance:** Compute Direct Normal Irradiance (DNI) using the Meinel model: `DNI = 1361 × 0.7^(AM^0.678)` W/m², where air mass (AM) depends on sun altitude
 2. **PAR split:** Break into direct + diffuse components; apply 45% PAR (photosynthetically active radiation, 400–700 nm) fraction
-3. **PPFD conversion:** Convert to photon flux density (µmol/m²/s) using standard factor 4.57
-4. **Shadow handling:**
+3. **Seattle cloud cover correction:** Apply realistic month-by-month cloud cover based on local meteorology:
+   - **April:** 25% clear (very cloudy spring)
+   - **May:** 30% clear
+   - **June:** 40% clear (transitional)
+   - **July:** 65% clear (dry summer peak)
+   - **August:** 70% clear (clearest month)
+   - **September:** 50% clear (fall clouds return)
+   - Cloud transmission model: direct irradiance transmits only through clear fraction; diffuse penetrates clouds at 50% rate
+4. **PPFD conversion:** Convert to photon flux density (µmol/m²/s) using standard factor 4.57
+5. **Shadow handling:**
    - **Unshaded ground:** receives direct + diffuse PAR
    - **Shaded ground:** receives diffuse-only PAR (realistic, since sky light still reaches it)
-5. **Accumulation:** Sum DLI across all samples: `DLI = Σ(PPFD × 300s) / 1,000,000 mol/m²`
+6. **Accumulation:** Sum DLI across all samples: `DLI = Σ(PPFD × 300s) / 1,000,000 mol/m²`
 
 ### Manual Regeneration
 

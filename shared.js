@@ -229,3 +229,42 @@ export function clearSkyPPFD(altRad) {
   
   return { direct: ppfdDirect, diffuse: ppfdDiffuse };
 }
+
+// ── Seattle cloud cover by month (% clear skies, based on 2025 data) ─────────
+// Used to modulate irradiance realistically for the Pacific Northwest.
+export function seattleCloudCover(month) {
+  // month: 1–12 (Jan=1, Dec=12)
+  // Returns fraction of clear sky (0–1), where 0 = fully overcast, 1 = clear
+  const clearFractions = [
+    0.25,  // April
+    0.30,  // May
+    0.40,  // June
+    0.65,  // July
+    0.70,  // August
+    0.50,  // September
+  ];
+  // Map April=4 to index 0, May=5 to index 1, etc.
+  if (month < 4 || month > 9) return 0.25;  // default for months outside growing season
+  return clearFractions[month - 4];
+}
+
+// ── Cloud-modulated PPFD ───────────────────────────────────────────────────
+// Applies Seattle's seasonal cloud cover to reduce irradiance realistically.
+// Cloud transmission model:
+//   - Direct: fully blocked by clouds → transmits only through clear fraction
+//   - Diffuse: partially penetrates clouds → higher transmittance
+export function cloudyPPFD(altRad, clearFraction) {
+  if (altRad <= 0) return { direct: 0, diffuse: 0 };
+  
+  const { direct: dirClear, diffuse: diffClear } = clearSkyPPFD(altRad);
+  
+  // Cloud transmission: direct is blocked; diffuse partially penetrates
+  const transmitDirect = clearFraction;
+  const transmitDiffuse = clearFraction + (1 - clearFraction) * 0.5;  // 50% of diffuse gets through clouds
+  
+  return {
+    direct: dirClear * transmitDirect,
+    diffuse: diffClear * transmitDiffuse,
+  };
+}
+
