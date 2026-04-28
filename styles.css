@@ -41,9 +41,13 @@ canvas { display: block; border: 2px solid #333; border-radius: 4px; }
 .dir.s { bottom: 4px; left: 50%; transform: translateX(-50%); }
 .dir.e { right: 6px; top: 50%; transform: translateY(-50%); }
 .dir.w { left: 6px; top: 50%; transform: translateY(-50%); }
-#legend {
-  margin-top: 10px; display: flex; gap: 16px; font-size: 0.8rem; color: #999;
+footer {
+  margin-top: 16px; font-size: 0.85rem;
 }
+footer a {
+  color: #f0c040; text-decoration: none;
+}
+footer a:hover { text-decoration: underline; }
 .swatch {
   display: inline-block; width: 14px; height: 14px; border-radius: 2px;
   vertical-align: middle; margin-right: 4px; border: 1px solid #555;

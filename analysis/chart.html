@@ -19,7 +19,7 @@
 </style>
 </head>
 <body>
-<h1>☀️ Yard Sunlight at Noon — 2026</h1>
+<h1>☀️ Yard Sunlight at Noon</h1>
 <p>Percentage of yard directly illuminated at solar noon each day</p>
 <canvas id="chart"></canvas>
 
@@ -57,12 +57,6 @@ async function init() {
       responsive: true,
       plugins: {
         legend: { labels: { color: '#e0e0e0' } },
-        tooltip: {
-          callbacks: {
-            title: (items) => items[0].label,
-            label: (item) => `${item.parsed.y.toFixed(1)}% sunlit`,
-          }
-        }
       },
       scales: {
         x: {
