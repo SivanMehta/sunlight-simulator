@@ -109,7 +109,7 @@ The heatmap shows **Daily Light Integral (DLI, mol/m²/day)** — the cumulative
 node analysis/sun-hours-heatmap.mjs 2026    # generates analysis/sun-hours-heatmap-2026.csv
 ```
 
-The script samples every 15 minutes during the growing season window. For each sample:
+The script samples every 5 minutes during the growing season window. For each sample:
 
 1. **Clear-sky irradiance:** Compute Direct Normal Irradiance (DNI) using the Meinel model: `DNI = 1361 × 0.7^(AM^0.678)` W/m², where air mass (AM) depends on sun altitude
 2. **PAR split:** Break into direct + diffuse components; apply 45% PAR (photosynthetically active radiation, 400–700 nm) fraction
@@ -117,7 +117,36 @@ The script samples every 15 minutes during the growing season window. For each s
 4. **Shadow handling:**
    - **Unshaded ground:** receives direct + diffuse PAR
    - **Shaded ground:** receives diffuse-only PAR (realistic, since sky light still reaches it)
-5. **Accumulation:** Sum DLI across all samples: `DLI = Σ(PPFD × 900s) / 1,000,000 mol/m²`
+5. **Accumulation:** Sum DLI across all samples: `DLI = Σ(PPFD × 300s) / 1,000,000 mol/m²`
+
+### Manual Regeneration
+
+To regenerate the heatmap for a different year or adjust sampling parameters:
+
+```bash
+# Regenerate for a specific year
+node analysis/sun-hours-heatmap.mjs 2027    # generates analysis/sun-hours-heatmap-2027.csv
+```
+
+**Modifying the script:**
+
+Edit `analysis/sun-hours-heatmap.mjs` to customize:
+
+- **`SAMPLE_STEP_MIN`** — Sampling interval (currently 5 minutes). Smaller values = smoother heatmap but longer generation time. Typical range: 5–15 minutes.
+- **Date range** — Change `new Date(YEAR, 3, 1)` (April 1) and `new Date(YEAR, 8, 1)` (September 1) to different months/days for different seasons.
+- **Time window** — Modify `totalMin = 540` (9am) and `totalMin <= 1020` (5pm) to sample different hours of the day.
+- **Grid resolution** — Adjust `GRID_X` and `GRID_Y` for finer/coarser spatial sampling (currently 0.25 ft resolution).
+
+**Example: Full year, 24-hour sampling at 15-min intervals:**
+
+```javascript
+const start = new Date(YEAR, 0, 1);      // Jan 1
+const end = new Date(YEAR, 11, 31);     // Dec 31
+const SAMPLE_STEP_MIN = 15;             // 15-min samples
+// Change loop: for (let totalMin = 0; totalMin < 24 * 60; totalMin += SAMPLE_STEP_MIN)
+```
+
+After modifying, regenerate and the script will print progress to stderr. The CSV will be output to `analysis/sun-hours-heatmap-{YEAR}.csv`. Reload `analysis/sun-hours-heatmap.html` (the viewer auto-loads the CSV for the current year).
 
 ### Interpretation
 

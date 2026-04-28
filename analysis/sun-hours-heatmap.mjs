@@ -9,7 +9,7 @@ import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow, clearSkyPPFD } from '../shared.
 const YEAR = parseInt(process.argv[2] || '2026', 10);
 const GRID_X = 60;                // 0.25 ft samples across 15 ft yard width
 const GRID_Y = 108;                // 0.25 ft samples across 27 ft yard length
-const SAMPLE_STEP_MIN = 15;       // quarter-hour sampling
+const SAMPLE_STEP_MIN = 5;       // 5-minute sampling for finer temporal resolution
 const SAMPLE_STEP_SEC = SAMPLE_STEP_MIN * 60;  // 900 seconds per sample
 const RAY_START_Z = 0.01;
 
