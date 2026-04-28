@@ -99,15 +99,15 @@ Open `analysis/chart.html` (served over HTTP) to see an interactive Chart.js lin
 
 ## Yard Sunlight Heatmap
 
-The heatmap analysis answers a different question: **which parts of the yard get the most direct sun over the course of a typical day, averaged across the whole year?**
+The heatmap analysis answers: **which parts of the yard get the most direct sun during the growing season (April 1 – September 1) between 9am and 5pm?**
 
 ```bash
 node analysis/sun-hours-heatmap.mjs 2026    # generates analysis/sun-hours-heatmap-2026.csv
 ```
 
-This script samples the full day in **15-minute increments** for every day of the year. For each sample point in a **60 × 108** grid across the yard, it accumulates direct-sun exposure and writes:
+This script samples the **9am–5pm window in 15-minute increments** for each day of the growing season. For each sample point in a **60 × 108** grid across the yard, it accumulates direct-sun exposure and writes:
 
-- **`annual_sun_hours`** — total direct-sun hours across the whole year
-- **`avg_daily_sun_hours`** — yearly total divided by 365, which is what the heatmap colors represent
+- **`season_sun_hours`** — total direct-sun hours across April 1 – September 1 (9am–5pm)
+- **`avg_day_sun_hours`** — season total divided by the number of days in the window, which is what the heatmap colors represent
 
-Open `analysis/sun-hours-heatmap.html` (served over HTTP) to view the heatmap. Brighter cells get more direct sunlight on a typical day; darker cells are more persistently shadowed by the surrounding houses, fence, table, and seats.
+Open `analysis/sun-hours-heatmap.html` (served over HTTP) to view the heatmap. Brighter cells get more direct sunlight on a typical growing-season afternoon; darker cells are more persistently shadowed by the surrounding houses, fence, table, and seats.

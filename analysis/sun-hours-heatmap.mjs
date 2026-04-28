@@ -1,6 +1,6 @@
 #!/usr/bin/env node
-// Compute direct-sun exposure across the yard over an entire year.
-// Outputs one CSV row per sample point with annual and average-daily sun hours.
+// Compute direct-sun exposure across the yard during growing season (Apr 1 - Sep 1, 9am-5pm).
+// Outputs one CSV row per sample point with season total and average-daily sun hours.
 
 import { writeFileSync } from 'fs';
 import { Y_MIN, Y_MAX, sunPos, sunDir, inShadow } from '../shared.js';
@@ -29,8 +29,8 @@ for (let yi = 0; yi < GRID_Y; yi++) {
   }
 }
 
-const start = new Date(YEAR, 0, 1);
-const end = new Date(YEAR, 11, 31);
+const start = new Date(YEAR, 3, 1);  // April 1
+const end = new Date(YEAR, 8, 1);   // September 1
 const startDate = formatDate(start);
 const endDate = formatDate(end);
 let dayCount = 0;
@@ -41,7 +41,7 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
   const mo = d.getMonth() + 1;
   const dy = d.getDate();
 
-  for (let totalMin = 0; totalMin < 24 * 60; totalMin += SAMPLE_STEP_MIN) {
+  for (let totalMin = 540; totalMin <= 1020; totalMin += SAMPLE_STEP_MIN) {  // 9am-5pm
     const hour = Math.floor(totalMin / 60);
     const minute = totalMin % 60;
     const { alt, az } = sunPos(yr, mo, dy, hour, minute);
@@ -61,7 +61,7 @@ for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
 }
 
 const rows = [
-  'year,start_date,end_date,grid_x,grid_y,sample_step_minutes,x_index,y_index,x_ft,y_ft,annual_sun_hours,avg_daily_sun_hours',
+  'year,start_date,end_date,grid_x,grid_y,sample_step_minutes,x_index,y_index,x_ft,y_ft,season_sun_hours,avg_day_sun_hours',
 ];
 
 for (const point of points) {
